@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>이현주 콩쿨 대시보드</title>
+    <style>
+        :root {
+            --glass-bg: rgba(15, 15, 25, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-card: rgba(255, 255, 255, 0.12);
+            --accent-color: #ffd166;
+            --accent-purple: #e0aaff;
+            --text-color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 모바일 한 화면 고정 */
+        }
+
+        body {
+            /* ⚠️ 배경 사진 파일명: background.jpg */
+            background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.65)), url('background.jpg') no-repeat center center;
+            background-size: cover;
+            color: var(--text-color);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 전체 대시보드 컨테이너 (한 화면 최적화) */
+        .dashboard-container {
+            width: 100%;
+            max-width: 500px;
+            max-height: 98vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 헤더 영역 */
+        header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        /* 1번째 줄: 대시보드 이름 */
+        .dashboard-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #ffffff;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-title span {
+            color: var(--accent-color);
+        }
+
+        /* 2번째 줄: 버튼 모음 */
+        .top-controls {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 5px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex: 1;
+            max-width: 100px;
+            text-align: center;
+        }
+
+        .btn-edit { background: rgba(108, 92, 231, 0.5); }
+        .btn-edit.active { background: #6c5ce7; box-shadow: 0 0 8px rgba(108, 92, 231, 0.8); }
+        .btn-add { background: rgba(52, 152, 219, 0.5); }
+        .btn-save { background: rgba(46, 204, 113, 0.5); }
+
+        .content-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 카드 박스 */
+        .card {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-contest { flex: 2.2; overflow: hidden; }
+        .card-eval { flex: 1.2; overflow: hidden; }
+
+        .card-header-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--accent-purple);
+        }
+
+        .table-wrapper {
+            overflow-y: auto;
+            max-height: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 2px;
+        }
+
+        th {
+            padding: 2px 4px;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.85);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            background: rgba(20, 20, 30, 0.8);
+            z-index: 1;
+        }
+
+        td {
+            padding: 1px 2px;
+            text-align: center;
+        }
+
+        /* Input 스타일 */
+        input[type="text"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #ffffff;
+            padding: 3px 2px;
+            text-align: center;
+            font-size: 0.73rem;
+            outline: none;
+            pointer-events: none;
+        }
+
+        /* 수정 모드 활성화 시 */
+        body.edit-mode input[type="text"] {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--accent-purple);
+        }
+
+        .action-col {
+            display: none;
+            width: 24px;
+        }
+
+        body.edit-mode .action-col {
+            display: table-cell;
+        }
+
+        .btn-del-row {
+            background: rgba(231, 76, 60, 0.6);
+            border: none;
+            color: white;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.65rem;
+            line-height: 18px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <header>
+        <!-- 1번째 줄: 대시보드 이름 -->
+        <div class="dashboard-title">🎻 <span>이현주</span> 바이올린 콩쿠르</div>
+
+        <!-- 2번째 줄: 버튼 모음 -->
+        <div class="top-controls">
+            <button class="btn btn-edit" id="editBtn" onclick="toggleEditMode()">✏️ 수정</button>
+            <button class="btn btn-add" onclick="addNewSchedule()">➕ 추가</button>
+            <button class="btn btn-save" onclick="saveData()">💾 저장</button>
+        </div>
+    </header>
+
+    <div class="content-grid">
+        <!-- 주요 콩쿠르 카드 -->
+        <div class="card card-contest">
+            <div class="card-header-title">🏆 주요 콩쿠르</div>
+            <div class="table-wrapper">
+                <table id="contestTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">콩쿠르</th>
+                            <th style="width: 26%;">예선</th>
+                            <th style="width: 26%;">본선</th>
+                            <th style="width: 26%;">접수</th>
+                            <th class="action-col"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 평가회 카드 -->
+        <div class="card card-eval">
+            <div class="card-header-title">📝 평가회</div>
+            <div class="table-wrapper">
+                <table id="evalTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">구분</th>
+                            <th style="width: 70%;">일정</th>
+                            <th class="action-col"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isEditMode = false;
+
+    const defaultContests = [
+        { name: "예원", preliminary: "8.22(토)", final: "8.29(토)", apply: "8.3~14" },
+        { name: "KCO", preliminary: "8.29(토)", final: "9.5(토)", apply: "7.21~8.20" },
+        { name: "스트라드", preliminary: "9.4(금)", final: "9.13(일)", apply: "8.7~" },
+        { name: "동아주니어", preliminary: "9.7~9(월~수)", final: "9.16~17(수,목)", apply: "8.3~28" },
+        { name: "국민한세대", preliminary: "9.18~19(금,토)", final: "10.1~3(목~토)", apply: "7.13~9.13" },
+        { name: "소년한국", preliminary: "대기중", final: "-", apply: "-" },
+        { name: "육영", preliminary: "대기중", final: "-", apply: "-" }
+    ];
+
+    const defaultEvals = [
+        { month: "8월", date: "8. 8. (토)" },
+        { month: "8월", date: "8. 15. (토)" },
+        { month: "9월", date: "(일정 없음)" }
+    ];
+
+    window.onload = function() { loadData(); };
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const editBtn = document.getElementById('editBtn');
+
+        if (isEditMode) {
+            document.body.classList.add('edit-mode');
+            editBtn.classList.add('active');
+            editBtn.innerHTML = '🔓 수정중';
+        } else {
+            document.body.classList.remove('edit-mode');
+            editBtn.classList.remove('active');
+            editBtn.innerHTML = '✏️ 수정';
+        }
+    }
+
+    function loadData() {
+        const cData = localStorage.getItem('hj_c_data_mobile');
+        const eData = localStorage.getItem('hj_e_data_mobile');
+
+        const contests = cData ? JSON.parse(cData) : defaultContests;
+        const evals = eData ? JSON.parse(eData) : defaultEvals;
+
+        renderContests(contests);
+        renderEvals(evals);
+    }
+
+    function renderContests(data) {
+        const tbody = document.getElementById('contestTable').querySelector('tbody');
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" value="${item.name}"></td>
+                <td><input type="text" value="${item.preliminary}"></td>
+                <td><input type="text" value="${item.final}"></td>
+                <td><input type="text" value="${item.apply}"></td>
+                <td class="action-col"><button class="btn-del-row" onclick="deleteRow(this)">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderEvals(data) {
+        const tbody = document.getElementById('evalTable').querySelector('tbody');
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" value="${item.month}"></td>
+                <td><input type="text" value="${item.date}"></td>
+                <td class="action-col"><button class="btn-del-row" onclick="deleteRow(this)">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 추가 버튼 통합 제어 (선택창)
+    function addNewSchedule() {
+        if (!isEditMode) toggleEditMode();
+
+        const type = prompt("어디에 추가하시겠습니까?\n1: 주요 콩쿠르\n2: 평가회", "1");
+
+        if (type === "1") {
+            const tbody = document.getElementById('contestTable').querySelector('tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" placeholder="명칭"></td>
+                <td><input type="text" placeholder="예선"></td>
+                <td><input type="text" placeholder="본선"></td>
+                <td><input type="text" placeholder="접수"></td>
+                <td class="action-col"><button class="btn-del-row" onclick="deleteRow(this)">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        } else if (type === "2") {
+            const tbody = document.getElementById('evalTable').querySelector('tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" placeholder="월"></td>
+                <td><input type="text" placeholder="일정"></td>
+                <td class="action-col"><button class="btn-del-row" onclick="deleteRow(this)">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    function deleteRow(btn) { btn.closest('tr').remove(); }
+
+    function saveData() {
+        const cRows = document.querySelectorAll('#contestTable tbody tr');
+        const contests = [];
+        cRows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            contests.push({ name: inputs[0].value, preliminary: inputs[1].value, final: inputs[2].value, apply: inputs[3].value });
+        });
+
+        const eRows = document.querySelectorAll('#evalTable tbody tr');
+        const evals = [];
+        eRows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            evals.push({ month: inputs[0].value, date: inputs[1].value });
+        });
+
+        localStorage.setItem('hj_c_data_mobile', JSON.stringify(contests));
+        localStorage.setItem('hj_e_data_mobile', JSON.stringify(evals));
+
+        alert('일정이 저장되었습니다!');
+        if(isEditMode) toggleEditMode();
+    }
+</script>
+
+</body>
+</html>
